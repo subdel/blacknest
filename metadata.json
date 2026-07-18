@@ -1,0 +1,6 @@
+{
+  "name": "Black Nest",
+  "description": "Portfolio website for modular mountain hotels in Anzère, Valais, Switzerland",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

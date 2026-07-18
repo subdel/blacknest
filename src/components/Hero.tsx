@@ -82,7 +82,11 @@ export default function Hero() {
     }
   });
 
-  const mode = heroMedia.videoSrc && !videoFailed
+  const activeVideoSrc = isTouch
+    ? heroMedia.videoSrcMobile ?? heroMedia.videoSrc
+    : heroMedia.videoSrc;
+
+  const mode = activeVideoSrc && !videoFailed
     ? "video"
     : heroMedia.imageDark && heroMedia.imageLit
       ? "crossfade"
@@ -100,7 +104,7 @@ export default function Hero() {
           {mode === "video" && (
             <video
               ref={videoRef}
-              src={heroMedia.videoSrc!}
+              src={activeVideoSrc!}
               muted
               playsInline
               preload="auto"

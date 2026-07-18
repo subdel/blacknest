@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import {
   motion,
   useScroll,
@@ -17,6 +17,15 @@ import { heroMedia } from "../heroMedia";
 export default function Hero() {
   const sectionRef = useRef<HTMLElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [videoFailed, setVideoFailed] = useState(false);
+  // Mobile/touch: scroll-scrubbing video is unreliable on iOS Safari,
+  // so we autoplay the reveal once instead (muted+playsinline is allowed).
+  const [isTouch] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      (window.matchMedia("(pointer: coarse)").matches ||
+        navigator.maxTouchPoints > 0)
+  );
 
   // Progress of the pinned reveal: 0 at top, 1 when the sticky phase ends
   const { scrollYProgress } = useScroll({
@@ -53,7 +62,7 @@ export default function Hero() {
     }
   });
 
-  const mode = heroMedia.videoSrc
+  const mode = heroMedia.videoSrc && !videoFailed
     ? "video"
     : heroMedia.imageDark && heroMedia.imageLit
       ? "crossfade"
@@ -75,6 +84,11 @@ export default function Hero() {
               muted
               playsInline
               preload="auto"
+              autoPlay={isTouch}
+              onLoadedMetadata={(e) => {
+                if (!isTouch) e.currentTarget.currentTime = 0.001;
+              }}
+              onError={() => setVideoFailed(true)}
               className="w-full h-full object-cover"
             />
           )}

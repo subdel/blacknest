@@ -10,9 +10,10 @@ import { heroMedia } from "../heroMedia";
 
 /**
  * Scroll-driven hero:
- * The section is 250vh tall; the visual stays pinned (sticky) for the first
- * ~1.5 screens while scrolling "approaches" the chalet — camera zooms in and
- * the lights come on (video scrub, image crossfade, or simulated demo).
+ * The section is 250vh tall; the visual stays pinned (sticky) while scrolling
+ * "approaches" the chalet — camera zooms in and the lights come on.
+ * Desktop: scroll scrubs the video timeline.
+ * Mobile: the video autoplays once (muted), then freezes on the lit frame.
  */
 export default function Hero() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -47,43 +48,34 @@ export default function Hero() {
     return () => window.removeEventListener("touchstart", onFirstTouch);
   }, [isTouch]);
 
-  // Progress of the pinned reveal: 0 at top, 1 when the sticky phase ends
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ["start start", "end end"],
   });
 
-  // Camera "approach": slow zoom + slight upward drift
   const scale = useTransform(scrollYProgress, [0, 1], [1, 1.18]);
   const bgY = useTransform(scrollYProgress, [0, 1], ["0%", "-4%"]);
-
-  // Lights: dark at top, fully lit by ~70% of the scroll
   const litOpacity = useTransform(scrollYProgress, [0.05, 0.7], [0, 1]);
-  // Demo mode: brightness ramp + warm window glow
   const demoBrightness = useTransform(
     scrollYProgress,
     [0, 0.7],
     ["brightness(0.3) saturate(0.8)", "brightness(1) saturate(1)"]
   );
   const glowOpacity = useTransform(scrollYProgress, [0.15, 0.7], [0, 0.5]);
-
-  // Title/pill fade out as we get close
   const uiOpacity = useTransform(scrollYProgress, [0, 0.45, 0.75], [1, 1, 0]);
   const titleY = useTransform(scrollYProgress, [0, 0.75], [0, -60]);
 
-  // Video scrubbing — map scroll progress to video timeline
   useMotionValueEvent(scrollYProgress, "change", (p) => {
     const v = videoRef.current;
-    if (!v || !heroMedia.videoSrc || !v.duration || isNaN(v.duration)) return;
-    const target = Math.min(p / 0.85, 1) * v.duration; // finish lights by 85%
-    // Avoid micro-seeks that cause jitter
+    if (isTouch || !v || !v.duration || isNaN(v.duration)) return;
+    const target = Math.min(p / 0.85, 1) * v.duration;
     if (Math.abs(v.currentTime - target) > 0.02) {
       v.currentTime = target;
     }
   });
 
   const activeVideoSrc = isTouch
-    ? heroMedia.videoSrcMobile ?? heroMedia.videoSrc
+    ? heroMedia.videoSrcMobile || heroMedia.videoSrc
     : heroMedia.videoSrc;
 
   const mode = activeVideoSrc && !videoFailed
@@ -142,7 +134,6 @@ export default function Hero() {
                 style={{ filter: demoBrightness }}
                 className="w-full h-full object-cover"
               />
-              {/* Simulated warm light spill from the cabin */}
               <motion.div
                 style={{ opacity: glowOpacity }}
                 className="absolute inset-0 pointer-events-none

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   motion,
   useScroll,
@@ -26,6 +26,26 @@ export default function Hero() {
       (window.matchMedia("(pointer: coarse)").matches ||
         navigator.maxTouchPoints > 0)
   );
+
+  // iOS-safe autoplay: React doesn't always emit the muted attribute,
+  // and Low Power Mode blocks autoplay until the first touch.
+  useEffect(() => {
+    if (!isTouch) return;
+    const v = videoRef.current;
+    if (!v) return;
+    v.defaultMuted = true;
+    v.muted = true;
+    const tryPlay = () => {
+      v.play().catch(() => {});
+    };
+    tryPlay();
+    const onFirstTouch = () => {
+      tryPlay();
+      window.removeEventListener("touchstart", onFirstTouch);
+    };
+    window.addEventListener("touchstart", onFirstTouch, { passive: true });
+    return () => window.removeEventListener("touchstart", onFirstTouch);
+  }, [isTouch]);
 
   // Progress of the pinned reveal: 0 at top, 1 when the sticky phase ends
   const { scrollYProgress } = useScroll({
@@ -84,6 +104,7 @@ export default function Hero() {
               muted
               playsInline
               preload="auto"
+              poster={siteData.heroImage}
               autoPlay={isTouch}
               onLoadedMetadata={(e) => {
                 if (!isTouch) e.currentTarget.currentTime = 0.001;
